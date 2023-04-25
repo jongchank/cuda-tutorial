@@ -13,7 +13,7 @@ __global__ void add_mat_kernel(int *a, int *b, int *c)
 //    printf("%d:%d\n", x, y);
 
     i = y * gridDim.x * blockDim.x + x;
-
+    c[i] = -999;
     c[i] = a[i] + b[i];
 }
 
@@ -50,16 +50,23 @@ int main(void)
         }
         printf("\n");
     }
-
+#if 0
+    for (i = 0; i < X; i++) {
+        for (j = 0; j < Y; j++) {
+            printf("%2d ", cpu_c[i][j]);
+        }
+        printf("\n");
+    }
+#endif
     cudaMalloc((void **)&gpu_a, size);
     cudaMalloc((void **)&gpu_b, size);
     cudaMalloc((void **)&gpu_c, size);
 
     cudaMemcpy(gpu_a, cpu_a, size, cudaMemcpyHostToDevice);
     cudaMemcpy(gpu_b, cpu_b, size, cudaMemcpyHostToDevice);
-
+    cudaMemset(gpu_c, 0xFF, size); 
+    dim3 dimGrid(1, 4);
     dim3 dimBlock(5, 2);
-    dim3 dimGrid(2, 5);
 
     add_mat_kernel<<<dimGrid, dimBlock>>>(gpu_a, gpu_b, gpu_c);
 
