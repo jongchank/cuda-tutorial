@@ -5,13 +5,15 @@
 
 __global__ void add_mat_kernel(int *a, int *b, int *c)
 {
-    int i;
-    int bi = blockIdx.x;
-    int ti = threadIdx.x;
+    int x, y, i;
 
-    printf("%d:%d\n", bi, ti);
+    x = blockIdx.x * blockDim.x + threadIdx.x;
+    y = blockIdx.y * blockDim.y + threadIdx.y;
 
-    i = threadIdx.x + blockIdx.x * blockDim.x;
+//    printf("%d:%d\n", x, y);
+
+    i = y * gridDim.x * blockDim.x + x;
+
     c[i] = a[i] + b[i];
 }
 
@@ -30,9 +32,23 @@ int main(void)
 
     for (i = 0; i < X; i++) {
         for (j = 0; j < Y; j++) {
-            cpu_a[i][j] = 1;
-            cpu_b[i][j] = 2;
+            cpu_a[i][j] = i * X + j;
+            cpu_b[i][j] = -(i * X + j);
         }
+    }
+
+    for (i = 0; i < X; i++) {
+        for (j = 0; j < Y; j++) {
+            printf("%2d ", cpu_a[i][j]);
+        }
+        printf("\n");
+    }
+
+    for (i = 0; i < X; i++) {
+        for (j = 0; j < Y; j++) {
+            printf("%2d ", cpu_b[i][j]);
+        }
+        printf("\n");
     }
 
     cudaMalloc((void **)&gpu_a, size);
@@ -42,7 +58,10 @@ int main(void)
     cudaMemcpy(gpu_a, cpu_a, size, cudaMemcpyHostToDevice);
     cudaMemcpy(gpu_b, cpu_b, size, cudaMemcpyHostToDevice);
 
-    add_mat_kernel<<<20, 5>>>(gpu_a, gpu_b, gpu_c);
+    dim3 dimBlock(5, 2);
+    dim3 dimGrid(2, 5);
+
+    add_mat_kernel<<<dimGrid, dimBlock>>>(gpu_a, gpu_b, gpu_c);
 
     cudaDeviceSynchronize();
 
@@ -50,7 +69,7 @@ int main(void)
 
     for (i = 0; i < X; i++) {
         for (j = 0; j < Y; j++) {
-            printf("%d ", cpu_c[i][j]);
+            printf("%2d ", cpu_c[i][j]);
         }
         printf("\n");
     }
